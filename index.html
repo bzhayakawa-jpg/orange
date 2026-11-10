@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache">
 <title>オレンジ</title>
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -19,6 +20,19 @@
 </style>
 </head>
 <body>
-<iframe src="https://script.google.com/macros/s/AKfycbx_V1bx62b_g4RAUE3Q1r7M9H-AFqvL-tuGoLx5NhG_IGOoZEv-WXPpmEXP2V7DkobtoA/exec" title="オレンジ 介護ポータル" allow="clipboard-write"></iframe>
+<iframe id="app" title="オレンジ 介護ポータル" allow="clipboard-write"></iframe>
+<script>
+// ポータル本体(Apps Script)のURL。開くたびに最新版を読み込む
+var URL_ = "https://script.google.com/macros/s/AKfycbx_V1bx62b_g4RAUE3Q1r7M9H-AFqvL-tuGoLx5NhG_IGOoZEv-WXPpmEXP2V7DkobtoA/exec";
+var f = document.getElementById("app"), hiddenAt = 0;
+function load(){ f.src = URL_ + "?v=" + Date.now(); }
+load();
+// アプリに戻ってきたとき、10分以上たっていたら最新版を読み直す
+document.addEventListener("visibilitychange", function(){
+  if (document.hidden) { hiddenAt = Date.now(); }
+  else if (hiddenAt && Date.now() - hiddenAt > 10*60*1000) { load(); }
+});
+window.addEventListener("pageshow", function(e){ if (e.persisted) load(); });
+</script>
 </body>
 </html>
