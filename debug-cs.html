@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head><script>window.__e=[];window.onerror=function(m,s,l,c){window.__e.push(m+' @'+l+':'+c);document.title='ERR '+m+' @'+l+':'+c};var mk=function(){var p=new Proxy({},{get:function(t,k){if(k==='withSuccessHandler'||k==='withFailureHandler'||k==='withUserObject')return function(){return p};return function(){window.__e.push('RUN '+String(k));document.title='RUN '+String(k)}}});return p};window.google={script:{get run(){return mk()},host:{close:function(){}}}};</script>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root { --main:#f08c00; --bg:#fff8ef; --line:#e6d3bb; --text:#333; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Hiragino Sans","Noto Sans JP",sans-serif; background:var(--bg); color:var(--text); font-size:17px; }
+  header { background:var(--main); color:#fff; padding:10px 12px; font-weight:bold; font-size:17px; position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:10px; }
+  #reloadBtn { flex:none; background:#fff; color:var(--main); border:none; border-radius:20px; padding:8px 14px; font-size:16px; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+  #reloadBtn:active { transform:scale(.95); }
+  .dow { font-weight:bold; margin-top:6px; font-size:16px; }
+  input[type=date] { color:#333; -webkit-text-fill-color:#333; }
+  main { padding:12px 16px 120px; max-width:720px; margin:auto; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:12px; }
+  .card h2 { font-size:16px; margin:0 0 8px; color:var(--main); }
+  .sub { font-weight:bold; font-size:15px; margin:10px 0 4px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chips label { border:1px solid var(--line); border-radius:20px; padding:8px 12px; background:#fff; cursor:pointer; user-select:none; }
+  .chips input { display:none; }
+  .chips input:checked + span { color:#fff; }
+  .chips label:has(input:checked) { background:var(--main); border-color:var(--main); color:#fff; }
+  select, input[type=text], input[type=date], input[type=time], input[type=number], textarea {
+    width:100%; font-size:17px; padding:10px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+  textarea { min-height:80px; }
+  input[type=date], input[type=time], input[type=datetime-local] { -webkit-appearance:none; appearance:none; display:block; width:100%; min-width:0; max-width:100%; height:46px; text-align:left; font-size:17px; padding:10px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+  input[type=date]::-webkit-date-and-time-value, input[type=time]::-webkit-date-and-time-value, input[type=datetime-local]::-webkit-date-and-time-value { text-align:left; }
+  .row > div, .row > input { min-width:0; }
+  .row { display:flex; gap:8px; } .row > * { flex:1; }
+  .voice { display:flex; gap:6px; align-items:flex-start; }
+  .voice textarea { flex:1; }
+  .mic { width:56px; height:56px; border-radius:50%; border:none; background:var(--main); color:#fff; font-size:24px; flex:none; }
+  .mic.on { background:#d6336c; animation:pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity:.6; } }
+  .note { font-size:13px; color:#888; margin-top:4px; }
+  .warn { background:#ffe3e3; color:#c92a2a; padding:8px; border-radius:8px; margin-top:6px; }
+  .hidden { display:none; }
+  #saveBar { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--line); padding:10px 16px; }
+  #saveBtn, #pinBtn { width:100%; padding:14px; font-size:18px; border:none; border-radius:10px; background:var(--main); color:#fff; font-weight:bold; }
+  #toast { position:fixed; top:60px; left:50%; transform:translateX(-50%); background:#2b8a3e; color:#fff; padding:10px 18px; border-radius:20px; display:none; z-index:9; }
+</style>
+</head>
+<body>
+<header><button id="reloadBtn" onclick="refreshAll()">↻ 更新</button><span>日々の支援記録（B型）</span></header>
+
+<!-- 暗証番号 -->
+<main id="pinView">
+  <div class="card">
+    <h2>暗証番号</h2>
+    <input type="number" id="pin" inputmode="numeric" placeholder="暗証番号">
+    <p></p><button id="pinBtn" onclick="login()">ひらく</button>
+  </div>
+</main>
+
+<!-- 入力 -->
+<main id="formView" class="hidden">
+  <div class="card">
+    <div class="row">
+      <div><div class="sub">利用日</div><input type="date" id="date"><div id="dow" class="dow"></div></div>
+    </div>
+    <div class="sub">利用者名</div><select id="user"></select>
+    <div class="sub">記入者</div><select id="staff"></select>
+    <div class="sub">利用区分</div>
+    <div class="chips" data-name="kubun" data-type="radio">通所|欠席・加算対象|欠席・それ以外</div>
+  </div>
+
+  <!-- 通所した日 ①〜⑥ -->
+  <section id="secTsusho" class="hidden">
+    <div class="card"><h2>① 送迎・食事</h2>
+      <div class="note">出欠・送迎・食事は業務日誌が基準です。同じ内容を選んでください。</div>
+      <div class="sub">送迎</div><div class="chips" data-name="sougei" data-type="radio">なし|往路|復路|往復</div>
+      <div class="sub">食事</div><div class="chips" data-name="shokuji" data-type="radio">なし|あり|食事加算対象外</div>
+      <div class="sub">摂食量</div><div class="chips" data-name="sesshoku" data-type="radio">完食|9〜7割|6〜4割|3〜1割|未摂食</div>
+      <div class="sub">摂食状況</div><div class="chips" data-name="sesshokuJ" data-type="radio">普通|時間がかかった|残した</div>
+    </div>
+
+    <div class="card"><h2>② 作業内容</h2>
+      <div class="sub">午前</div>
+      <div class="chips" data-name="amWork">封筒|ポチ袋|紙袋（持ち手あり）|紙袋（持ち手なし）|袋づくり|缶バッジ|シール貼り|洗車|接客|畑|マッチング|ゴミ出し|トイレ掃除|その他</div>
+      <div class="row" style="margin-top:6px"><input type="text" id="amOther" placeholder="その他の内容"><input type="text" id="amQty" placeholder="数量（個・枚・台）"></div>
+      <div class="sub">午後</div>
+      <div class="chips" data-name="pmWork">封筒|ポチ袋|紙袋（持ち手あり）|紙袋（持ち手なし）|袋づくり|缶バッジ|シール貼り|洗車|接客|畑|マッチング|ゴミ出し|トイレ掃除|その他</div>
+      <div class="row" style="margin-top:6px"><input type="text" id="pmOther" placeholder="その他の内容"><input type="text" id="pmQty" placeholder="数量（個・枚・台）"></div>
+      <div class="chips" data-name="nouhin" style="margin-top:6px">納品あり</div>
+    </div>
+
+    <div class="card"><h2>③ 様子</h2>
+      <div class="sub">体調・表情</div><div class="chips" data-name="taicho">元気・表情が明るい|普段どおり|疲れている様子|眠そう|表情が暗い・元気がない|体調不良の訴え（④へ）</div>
+      <div class="sub">作業</div><div class="chips" data-name="sagyo">集中して取り組めた|丁寧に取り組めた|途中で手が止まった|休憩が多め|作業量が普段より多い|普段より少ない</div>
+      <div class="sub">できたこと</div><div class="chips" data-name="dekita">最後までやり遂げた|新しい作業に挑戦した|自分から作業を始めた|他の利用者と協力できた|報告・相談ができた</div>
+      <div class="sub">困ったこと</div><div class="chips" data-name="komatta">指示が伝わりにくかった|作業の切り替えが難しかった|他の利用者とトラブル|落ち着かない様子</div>
+      <div class="sub">職員の支援</div><div class="chips" data-name="shien">声かけをした|見本を見せた|手順を説明した|休憩を促した|見守った|話を聞いた</div>
+    </div>
+
+    <div class="card"><h2>④ その日の状態</h2>
+      <div class="voice"><textarea id="jotai" placeholder="🎤を押して話してください（短文でOK）"></textarea><button class="mic" data-for="jotai">🎤</button></div>
+      <div class="sub">本人の言葉（そのまま記録されます）</div>
+      <div class="voice"><textarea id="honninKotoba" placeholder="本人が言ったとおりに"></textarea><button class="mic" data-for="honninKotoba">🎤</button></div>
+    </div>
+
+    <div class="card"><h2>⑤ 気づいたこと</h2>
+      <div class="note">送迎車内の会話なども。なければ空欄でOK</div>
+      <div class="voice"><textarea id="kizuki"></textarea><button class="mic" data-for="kizuki">🎤</button></div>
+    </div>
+
+    <div class="card"><h2>⑥ 面談</h2>
+      <div class="chips" data-name="mendan" data-type="radio">なし|あり</div>
+      <div id="mendanBox" class="hidden">
+        <div class="row" style="margin-top:6px"><input type="time" id="mStart"><input type="time" id="mEnd"></div>
+        <div class="sub">面談者</div><select id="mWho"></select>
+        <div class="sub">本人の発言・内容</div>
+        <div class="voice"><textarea id="mNaiyo"></textarea><button class="mic" data-for="mNaiyo">🎤</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑦ 欠席・加算対象 -->
+  <section id="secA7" class="hidden">
+    <div class="card"><h2>⑦ 欠席・加算対象（欠席時対応加算 月4回まで）</h2>
+      <div id="a7Info" class="note"></div>
+      <div class="note">事前に休むと伝えていた場合は対象外です（⑧へ）</div>
+      <div class="sub">連絡を受けた日時</div><input type="datetime-local" id="a7Renraku">
+      <div class="sub">連絡の時期</div><div class="chips" data-name="a7Timing" data-type="radio">前々日|前日|当日</div>
+      <div class="sub">連絡者</div><div class="chips" data-name="a7Who" data-type="radio">本人|家族|その他</div>
+      <div class="sub">対応職員</div><select id="a7Staff"></select>
+      <div class="sub">理由</div><div class="chips" data-name="a7Riyu" data-type="radio">急な体調不良|急な都合|台風・災害など|その他</div>
+      <div class="sub">どんな状況か（本人の言葉も）</div>
+      <div class="voice"><textarea id="a7Jokyo"></textarea><button class="mic" data-for="a7Jokyo">🎤</button></div>
+      <div class="sub">対応した内容</div><div class="chips" data-name="a7Taio">体調の確認|受診・休養の助言|次回利用の声かけ|作業の割り振りの調整|その他</div>
+      <div class="sub">具体的に（指導・相談・調整）</div>
+      <div class="voice"><textarea id="a7Gutai"></textarea><button class="mic" data-for="a7Gutai">🎤</button></div>
+    </div>
+  </section>
+
+  <!-- ⑧ 欠席・それ以外 -->
+  <section id="secA8" class="hidden">
+    <div class="card"><h2>⑧ 欠席・それ以外（加算を算定しない欠席）</h2>
+      <div class="sub">連絡を受けた日時</div><input type="datetime-local" id="a8Renraku">
+      <div class="sub">連絡者</div><div class="chips" data-name="a8Who" data-type="radio">本人|家族|その他|連絡なし|事前に連絡済み</div>
+      <div class="sub">理由</div><div class="chips" data-name="a8Riyu" data-type="radio">私用|体調不良|通院|家族の用事|その他</div>
+      <div class="sub">次回予定</div><input type="date" id="a8Next">
+    </div>
+  </section>
+
+  <!-- 自由欄 -->
+  <section id="secFree" class="hidden">
+    <div class="card"><h2>自由欄</h2>
+      <div class="sub">その他の出来事</div>
+      <div class="voice"><textarea id="sonota"></textarea><button class="mic" data-for="sonota">🎤</button></div>
+      <div class="sub">利用者の言葉（そのまま記録されます）</div>
+      <div class="voice"><textarea id="riyoshaKotoba"></textarea><button class="mic" data-for="riyoshaKotoba">🎤</button></div>
+      <div class="sub">体調・面談・その他</div>
+      <div class="voice"><textarea id="taichoEtc"></textarea><button class="mic" data-for="taichoEtc">🎤</button></div>
+      <div class="note">話した内容はそのまま保存され、夕方に約100文字に整えられます。言い直しや「えーと」は気にしなくて大丈夫です。</div>
+    </div>
+  </section>
+</main>
+
+<div id="saveBar" class="hidden"><button id="saveBtn" onclick="save()">保存する</button></div>
+<div id="toast"></div>
+
+<script>
+let PIN = '';
+const $ = id => document.getElementById(id);
+
+// チップ（□選択）を作る
+document.querySelectorAll('.chips').forEach(box => {
+  const name = box.dataset.name, type = box.dataset.type || 'checkbox';
+  const items = box.textContent.trim().split('|');
+  box.textContent = '';
+  items.forEach(v => {
+    const lb = document.createElement('label');
+    lb.innerHTML = `<input type="${type}" name="${name}" value="${v}"><span>${v}</span>`;
+    box.appendChild(lb);
+  });
+});
+const val = n => { const c=[...document.querySelectorAll(`[name="${n}"]:checked`)].map(e=>e.value); return c; };
+
+function login() {
+  PIN = $('pin').value;
+  google.script.run.withSuccessHandler(m => {
+    $('pinView').classList.add('hidden'); $('formView').classList.remove('hidden'); $('saveBar').classList.remove('hidden');
+    fillMasters(m);
+    $('date').value = new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
+    paintDate();
+  }).withFailureHandler(e => alertBox(e.message)).getMasters(PIN);
+}
+
+function fillMasters(m) {
+  const opt = a => '<option value="">選んでください</option>' + a.map(x=>`<option>${x}</option>`).join('');
+  $('user').innerHTML = opt(m.users);
+  ['staff','mWho','a7Staff'].forEach(id => $(id).innerHTML = opt(m.staff));
+}
+
+// 祝日（2026〜2027年、振替休日を含む）
+const HOLIDAYS = new Set(["2026-01-01", "2026-01-12", "2026-02-11", "2026-02-23", "2026-03-20", "2026-04-29", "2026-05-03", "2026-05-04", "2026-05-05", "2026-05-06", "2026-07-20", "2026-08-11", "2026-09-21", "2026-09-22", "2026-09-23", "2026-10-12", "2026-11-03", "2026-11-23", "2027-01-01", "2027-01-11", "2027-02-11", "2027-02-23", "2027-03-21", "2027-03-22", "2027-04-29", "2027-05-03", "2027-05-04", "2027-05-05", "2027-07-19", "2027-08-11", "2027-09-20", "2027-09-23", "2027-10-11", "2027-11-03", "2027-11-23"]);
+// 土曜は青、日曜・祝日は赤
+function paintDate() {
+  const v = $('date').value, d = $('dow');
+  if (!v) { d.textContent = ''; return; }
+  const w = new Date(v + 'T00:00:00').getDay(), hol = HOLIDAYS.has(v);
+  const c = (w === 0 || hol) ? '#e03131' : (w === 6 ? '#1c64d6' : '#333');
+  $('date').style.color = c; $('date').style.webkitTextFillColor = c; d.style.color = c;
+  d.textContent = '（' + '日月火水木金土'[w] + '曜日）' + (hol ? '　祝日' : '');
+}
+
+// 更新ボタン：利用者・職員の一覧を最新にする（入力中の内容は消えない）
+function refreshAll() {
+  if (!PIN) { try { location.reload(); } catch (e) {} return; }
+  const keep = { user: $('user').value, staff: $('staff').value, mWho: $('mWho').value, a7Staff: $('a7Staff').value };
+  google.script.run.withSuccessHandler(m => {
+    fillMasters(m); Object.keys(keep).forEach(k => $(k).value = keep[k]); paintDate();
+    toast('最新の状態にしました');
+  }).withFailureHandler(e => alertBox(e.message)).getMasters(PIN);
+}
+
+// 利用区分で表示を切り替え
+document.addEventListener('change', e => {
+  if (e.target.name === 'kubun') {
+    const k = e.target.value;
+    $('secTsusho').classList.toggle('hidden', k !== '通所');
+    $('secA7').classList.toggle('hidden', k !== '欠席・加算対象');
+    $('secA8').classList.toggle('hidden', k !== '欠席・それ以外');
+    $('secFree').classList.remove('hidden');
+    if (k === '欠席・加算対象') countAbsence();
+  }
+  if (e.target.id === 'date') paintDate();
+  if (e.target.name === 'mendan') $('mendanBox').classList.toggle('hidden', e.target.value !== 'あり');
+  if ((e.target.id === 'user' || e.target.id === 'date') && val('kubun')[0] === '欠席・加算対象') countAbsence();
+});
+
+function countAbsence() {
+  if (!$('user').value) { $('a7Info').textContent = '利用者を選ぶと今月の回数が出ます'; return; }
+  google.script.run.withSuccessHandler(n => {
+    const next = n + 1;
+    $('a7Info').innerHTML = next > 4
+      ? `<div class="warn">今月 ${next} 回目です。月4回を超えるため加算できません。⑧（それ以外）を選んでください。</div>`
+      : `今月 ${next} 回目になります`;
+  }).getAbsenceCount(PIN, $('user').value, $('date').value);
+}
+
+// 音声入力（Androidのchrome推奨）
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, recBtn = null;
+// マイクボタン:ホーム画面のアプリ(入口ページ)に聞き取りを頼み、文字を送り返してもらう。
+// 入口ページの外で開いたときは、キーボードのマイクを使う案内を出す。
+function kbHint(ta, msg) {
+  ta.focus();
+  try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (e) {}
+  const box = ta.closest('.voice') || ta;
+  let h = box.nextElementSibling;
+  if (!h || h.className !== 'michint') {
+    h = document.createElement('div');
+    h.className = 'michint';
+    h.style.cssText = 'margin-top:6px;padding:8px 10px;border-radius:10px;background:#fff4e5;color:#7a4b00;font-size:13px;line-height:1.6';
+    box.insertAdjacentElement('afterend', h);
+  }
+  h.textContent = msg || 'キーボードのマイク(🎤)を押して話すと、この欄に文字が入ります。';
+}
+function micHintOff(ta) { const box = ta.closest('.voice') || ta, h = box.nextElementSibling; if (h && h.className === 'michint') h.remove(); }
+const MIC_TOP = 'https://bzhayakawa-jpg.github.io';
+let mic = null;
+function micReset() { if (!mic) return; clearTimeout(mic.timer); mic.btn.classList.remove('on'); mic.btn.textContent = mic.btn.dataset.label || '🎤'; mic = null; }
+function micStart(btn) {
+  const ta = $(btn.dataset.for);
+  if (window.top === window) { kbHint(ta); return; }
+  micReset();
+  if (!btn.dataset.label) btn.dataset.label = btn.textContent;
+  const id = String(Date.now()) + String(Math.random()).slice(2);
+  mic = { btn: btn, ta: ta, id: id, base: ta.value ? ta.value + '\n' : '', failed: '' };
+  btn.classList.add('on'); btn.textContent = '●';
+  micHintOff(ta);
+  mic.timer = setTimeout(function () { const t = mic && mic.ta; micReset(); if (t) kbHint(t); }, 3000);
+  try { window.top.postMessage({ type: 'orange-mic', action: 'start', id: id }, MIC_TOP); } catch (e) {}
+}
+function micStop() { if (mic) { try { window.top.postMessage({ type: 'orange-mic', action: 'stop', id: mic.id }, MIC_TOP); } catch (e) {} } }
+window.addEventListener('message', function (e) {
+  const d = e.data;
+  if (e.origin !== MIC_TOP || !d || d.type !== 'orange-mic' || !mic || d.id !== mic.id) return;
+  if (d.state === 'started') { clearTimeout(mic.timer); mic.started = true; return; }
+  if (d.state === 'text') { mic.ta.value = mic.base + d.text; return; }
+  if (d.state === 'error') { mic.failed = d.error; clearTimeout(mic.timer); return; }
+  if (d.state === 'end') {
+    const f = mic.failed, t = mic.ta, retry = mic.retry;
+    micReset();
+    if (f === 'not-allowed' || f === 'service-not-allowed') { if (!retry) kbHint(t, 'マイクが使えませんでした。もう一度マイクボタンを押して、「許可」を選んでください。'); }
+    else if (f && f !== 'no-speech' && f !== 'aborted') kbHint(t);
+  }
+});
+// 押したまま話す/1回タップして話す、の両方に対応
+document.querySelectorAll('.mic').forEach(function (btn) {
+  let downAt = 0;
+  btn.style.touchAction = 'none'; btn.style.webkitUserSelect = 'none'; btn.style.webkitTouchCallout = 'none';
+  btn.addEventListener('touchstart', function (ev) {
+    ev.preventDefault(); downAt = Date.now();
+    if (mic && mic.btn === btn) { micStop(); downAt = 0; return; }
+    micStart(btn);
+  }, { passive: false });
+  btn.addEventListener('touchend', function (ev) {
+    ev.preventDefault(); if (!downAt) return;
+    const held = Date.now() - downAt; downAt = 0;
+    if (mic && mic.btn === btn && (mic.failed === 'not-allowed' || mic.failed === 'service-not-allowed')) { mic.retry = true; micReset(); micStart(btn); return; }
+    if (!mic && window.top !== window) { micStart(btn); return; }
+    if (held > 700) setTimeout(micStop, 400);
+  }, { passive: false });
+  btn.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    if (mic && mic.btn === btn) micStop(); else micStart(btn);
+  });
+});
+
+
+function mins(a,b){ if(!a||!b) return ''; const [h1,m1]=a.split(':'),[h2,m2]=b.split(':'); return (h2*60+ +m2)-(h1*60+ +m1); }
+
+function save() {
+  const k = val('kubun')[0];
+  if (!$('user').value || !$('staff').value || !k) { alertBox('利用者名・記入者・利用区分を選んでください'); return; }
+  const r = { date:$('date').value, user:$('user').value, staff:$('staff').value, kubun:k };
+  const text = ['amOther','amQty','pmOther','pmQty','jotai','honninKotoba','kizuki','mStart','mEnd','mNaiyo',
+    'a7Renraku','a7Jokyo','a7Gutai','a8Renraku','a8Next','sonota','riyoshaKotoba','taichoEtc'];
+  const sel = ['mWho','a7Staff'];
+  const chips = ['sougei','shokuji','sesshoku','sesshokuJ','amWork','pmWork','nouhin','taicho','sagyo','dekita','komatta','shien',
+    'mendan','a7Timing','a7Who','a7Riyu','a7Taio','a8Who','a8Riyu'];
+  // 選んだ区分の欄だけ保存
+  const visible = el => !el.closest('section.hidden') && !el.closest('.hidden#mendanBox');
+  text.concat(sel).forEach(id => { if (visible($(id))) r[id] = $(id).value; });
+  chips.forEach(n => { const box = document.querySelector(`[data-name="${n}"]`); if (visible(box)) r[n] = val(n); });
+  r.nouhin = (r.nouhin||[]).length ? 'あり' : '';
+  if (r.mendan && r.mendan[0]==='あり') r.mMin = mins(r.mStart, r.mEnd);
+  $('saveBtn').disabled = true; $('saveBtn').textContent = '保存中…';
+  google.script.run.withSuccessHandler(res => {
+    $('saveBtn').disabled = false; $('saveBtn').textContent = '保存する';
+    let msg = r.user + 'さんの記録を保存しました';
+    if (res.a7Count) msg += `（欠席時対応 今月${res.a7Count}回目）`;
+    toast(msg);
+    if (res.warn) alertBox('欠席時対応加算が月4回を超えています。サービス管理責任者に確認してください。');
+    resetForm();
+  }).withFailureHandler(e => { $('saveBtn').disabled=false; $('saveBtn').textContent='保存する'; alertBox(e.message); }).saveRecord(PIN, r);
+}
+
+function resetForm() {
+  document.querySelectorAll('#formView input[type=checkbox],#formView input[type=radio]').forEach(e=>e.checked=false);
+  document.querySelectorAll('#formView textarea, #formView input[type=text], #formView input[type=time], #formView input[type=datetime-local], #a8Next').forEach(e=>e.value='');
+  $('user').value=''; ['secTsusho','secA7','secA8','secFree','mendanBox'].forEach(id=>$(id).classList.add('hidden'));
+  window.scrollTo(0,0);
+}
+function toast(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',3000); }
+function alertBox(m){ toast(m); $('toast').style.background='#c92a2a'; setTimeout(()=>$('toast').style.background='#2b8a3e',3000); }
+</script>
+</body>
+</html>
