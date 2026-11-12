@@ -50,6 +50,7 @@ document.addEventListener("visibilitychange", function () {
     var r = new SR(); cur = r;
     r.lang = "ja-JP"; r.continuous = true; r.interimResults = true;
     r.onstart = function () { send({ state: "started" }); };
+    ["audiostart", "soundstart", "speechstart", "speechend", "audioend", "nomatch"].forEach(function (k) { r["on" + k] = function () { send({ state: "info", info: k }); }; });
     r.onresult = function (ev) { var s = ""; for (var i = 0; i < ev.results.length; i++) s += ev.results[i][0].transcript; send({ state: "text", text: s }); };
     r.onerror = function (ev) { send({ state: "error", error: ev.error }); };
     r.onend = function () { if (cur === r) cur = null; send({ state: "end" }); };
