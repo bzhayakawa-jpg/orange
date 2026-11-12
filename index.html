@@ -34,6 +34,28 @@ document.addEventListener("visibilitychange", function () {
   if (hiddenAt && Date.now() - hiddenAt > 10 * 60 * 1000) f.src = URL_ + "?v=" + Date.now();
   hiddenAt = 0;
 });
+// 音声入力の代行:アプリの中の画面(Googleの枠の中)はマイクが使えないため、この入口ページが聞き取って文字を送り返す
+(function () {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, cur = null;
+  window.addEventListener("message", function (e) {
+    var d = e.data;
+    if (!d || d.type !== "orange-mic") return;
+    if (!/^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(e.origin)) return;
+    var src = e.source, org = e.origin, id = d.id;
+    function send(o) { o.type = "orange-mic"; o.id = id; try { src.postMessage(o, org); } catch (x) {} }
+    if (d.action === "stop") { if (cur) { try { cur.stop(); } catch (x) {} } return; }
+    if (d.action !== "start") return;
+    if (!SR) { send({ state: "error", error: "unsupported" }); send({ state: "end" }); return; }
+    if (cur) { try { cur.abort(); } catch (x) {} }
+    var r = new SR(); cur = r;
+    r.lang = "ja-JP"; r.continuous = true; r.interimResults = true;
+    r.onstart = function () { send({ state: "started" }); };
+    r.onresult = function (ev) { var s = ""; for (var i = 0; i < ev.results.length; i++) s += ev.results[i][0].transcript; send({ state: "text", text: s }); };
+    r.onerror = function (ev) { send({ state: "error", error: ev.error }); };
+    r.onend = function () { if (cur === r) cur = null; send({ state: "end" }); };
+    try { r.start(); } catch (x) { send({ state: "error", error: "start" }); send({ state: "end" }); }
+  });
+})();
 </script>
 </body>
 </html>
