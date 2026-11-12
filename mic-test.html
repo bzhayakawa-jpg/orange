@@ -1,17 +1,22 @@
 <!DOCTYPE html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 <title>音声入力テスト</title>
-<style>body{margin:0;font-family:-apple-system,"Hiragino Sans",sans-serif;background:#fdf6ee;color:#333;padding:20px}h1{font-size:20px;color:#e08a1e}textarea{width:100%;box-sizing:border-box;height:140px;font-size:18px;padding:12px;border:1px solid #e6d3bd;border-radius:12px}button{display:block;width:100%;margin:16px 0;padding:22px;font-size:22px;font-weight:700;color:#fff;background:#f08c00;border:0;border-radius:16px}button.on{background:#d6336c}#st{font-size:15px;line-height:1.7;background:#fff;border-radius:12px;padding:12px}</style></head>
-<body><h1>音声入力テスト</h1><p>下のボタンを押して、何か話してみてください。</p>
-<button id="b">🎤 押して話す</button><textarea id="t" placeholder="ここに文字が入ります"></textarea><div id="st">待機中</div>
+<style>body{margin:0;font-family:-apple-system,"Hiragino Sans",sans-serif;background:#fdf6ee;color:#333;padding:20px}h1{font-size:20px;color:#e08a1e}textarea{width:100%;box-sizing:border-box;height:140px;font-size:18px;padding:12px;border:1px solid #e6d3bd;border-radius:12px}#b{display:block;width:100%;margin:16px 0;padding:26px 10px;font-size:22px;font-weight:700;color:#fff;background:#f08c00;border:0;border-radius:16px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none}#b.on{background:#d6336c}#st{font-size:16px;line-height:1.7;background:#fff;border-radius:12px;padding:12px}</style></head>
+<body><h1>音声入力テスト(2)</h1><p>ボタンを<b>押したまま</b>話して、話し終わったら指をはなしてください。<br>(1回タップしてから話しても使えます。もう1回タップで止まります)</p>
+<button id="b">🎤 押しながら話す</button><textarea id="t" placeholder="ここに文字が入ります"></textarea><div id="st">待機中</div>
 <script>
-var SR=window.SpeechRecognition||window.webkitSpeechRecognition,rec=null,b=document.getElementById('b'),t=document.getElementById('t'),st=document.getElementById('st');
-var info='機能: '+(SR?'あり':'なし')+' / 画面: '+(window.navigator.standalone?'ホーム画面アプリ':'ブラウザ');st.textContent=info;
-b.onclick=function(){if(!SR){st.textContent=info+' → この端末では使えません';return}if(rec){rec.stop();return}
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition,rec=null,b=document.getElementById('b'),t=document.getElementById('t'),st=document.getElementById('st'),downAt=0;
+var info='機能: '+(SR?'あり':'なし')+' / '+(window.navigator.standalone?'ホーム画面アプリ':'ブラウザ');st.textContent=info;
+function say(m){st.textContent=info+' → '+m}
+function start(){if(!SR){say('この端末では使えません');return}if(rec)return;
 var base=t.value?t.value+'\n':'';rec=new SR();rec.lang='ja-JP';rec.continuous=true;rec.interimResults=true;
-b.classList.add('on');b.textContent='● 聞いています(押すと止まる)';st.textContent=info+' → 聞いています';
-rec.onresult=function(e){var s='';for(var i=0;i<e.results.length;i++)s+=e.results[i][0].transcript;t.value=base+s};
-rec.onerror=function(e){st.textContent=info+' → エラー: '+e.error};
-rec.onend=function(){b.classList.remove('on');b.textContent='🎤 押して話す';rec=null;if(st.textContent.indexOf('エラー')<0)st.textContent=info+' → 終了(うまく入りましたか?)'};
-try{rec.start()}catch(x){st.textContent=info+' → 開始できません: '+x.message}};
+b.classList.add('on');b.textContent='● 聞いています';say('聞いています。話してください');
+rec.onresult=function(e){var s='';for(var i=0;i<e.results.length;i++)s+=e.results[i][0].transcript;t.value=base+s;say('文字が入りました')};
+rec.onerror=function(e){say('エラー: '+e.error)};
+rec.onend=function(){b.classList.remove('on');b.textContent='🎤 押しながら話す';rec=null;if(st.textContent.indexOf('エラー')<0&&st.textContent.indexOf('文字が入り')<0)say('終わりました(文字は入りませんでした)')};
+try{rec.start()}catch(x){say('開始できません: '+x.message);rec=null}}
+function stop(){if(rec){try{rec.stop()}catch(x){}}}
+b.addEventListener('touchstart',function(e){e.preventDefault();downAt=Date.now();if(rec){stop();downAt=0;return}start()},{passive:false});
+b.addEventListener('touchend',function(e){e.preventDefault();if(!downAt)return;if(!rec&&SR){start();return}if(Date.now()-downAt>700)setTimeout(stop,400);downAt=0},{passive:false});
+b.addEventListener('click',function(){if(rec)stop();else start()});
 </script></body></html>
