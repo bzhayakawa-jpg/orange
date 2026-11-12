@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="no-cache">
-<title>オレンジ</title>
+<title>オレンジ社内</title>
+<!-- ホーム画面のアイコン -->
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="オレンジ">
+<meta name="apple-mobile-web-app-title" content="オレンジ社内">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#f18b00">
 <style>
@@ -20,19 +20,20 @@
 </style>
 </head>
 <body>
-<iframe id="app" title="オレンジ 介護ポータル" allow="clipboard-write"></iframe>
+<!-- ポータル本体(Apps Script)のURL -->
+<iframe id="f" title="オレンジ社内" allow="clipboard-write"></iframe>
 <script>
-// ポータル本体(Apps Script)のURL。開くたびに最新版を読み込む
 var URL_ = "https://script.google.com/macros/s/AKfycbx_V1bx62b_g4RAUE3Q1r7M9H-AFqvL-tuGoLx5NhG_IGOoZEv-WXPpmEXP2V7DkobtoA/exec";
-var f = document.getElementById("app"), hiddenAt = 0;
-function load(){ f.src = URL_ + "?v=" + Date.now(); }
-load();
-// アプリに戻ってきたとき、10分以上たっていたら最新版を読み直す
-document.addEventListener("visibilitychange", function(){
-  if (document.hidden) { hiddenAt = Date.now(); }
-  else if (hiddenAt && Date.now() - hiddenAt > 10*60*1000) { load(); }
+var f = document.getElementById("f");
+// 毎回いちばん新しい画面を読み込む
+f.src = URL_ + "?v=" + Date.now();
+// 10分以上ほかのアプリを見ていたら、戻ったときに読み込み直す
+var hiddenAt = 0;
+document.addEventListener("visibilitychange", function () {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  if (hiddenAt && Date.now() - hiddenAt > 10 * 60 * 1000) f.src = URL_ + "?v=" + Date.now();
+  hiddenAt = 0;
 });
-window.addEventListener("pageshow", function(e){ if (e.persisted) load(); });
 </script>
 </body>
 </html>
